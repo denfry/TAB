@@ -49,4 +49,19 @@ public class PaperImplementationProvider implements ImplementationProvider {
     public int getPing(@NotNull BukkitTabPlayer player) {
         return player.getPlayer().getPing();
     }
+
+    @Override
+    public double getTPS() {
+        return org.bukkit.Bukkit.getTPS()[0];
+    }
+
+    @Override
+    public double getMSPT() {
+        return org.bukkit.Bukkit.getAverageTickTime();
+    }
+
+    @Override
+    public void runSync(@NotNull org.bukkit.entity.Entity entity, @NotNull Runnable task) {
+        org.bukkit.Bukkit.getScheduler().runTask(me.neznamy.tab.platforms.bukkit.BukkitTAB.getPlugin(me.neznamy.tab.platforms.bukkit.BukkitTAB.class), task);
+    }
 }

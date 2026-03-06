@@ -78,19 +78,6 @@ public class BukkitPlatform implements BackendPlatform {
     /** Variables checking presence of other plugins to hook into */
     private final boolean placeholderAPI = ReflectionUtils.classExists("me.clip.placeholderapi.PlaceholderAPI");
 
-    /** Spigot field for tracking TPS, the array is final and only being modified instead of re-instantiated */
-    private double[] recentTps;
-
-    /** Detection for presence of Paper's TPS getter */
-    private final boolean paperTps = ReflectionUtils.methodExists(Bukkit.class, "getTPS");
-
-    /** Detection for presence of Paper's MSPT getter */
-    private final boolean paperMspt = ReflectionUtils.methodExists(Bukkit.class, "getAverageTickTime");
-
-    /** Package name of the server implementation, null on Paper 1.20.5+ */
-    @Nullable
-    private final String serverPackage;
-
     /** Implementation for creating new instances using content available on the server */
     @NotNull
     @Setter
@@ -120,12 +107,6 @@ public class BukkitPlatform implements BackendPlatform {
         String[] array = CRAFTBUKKIT_PACKAGE.split("\\.");
         serverPackage = array.length > 3 ? array[3] : null;
         implementationProvider = findImplementationProvider();
-        try {
-            Object server = Bukkit.getServer().getClass().getMethod("getServer").invoke(Bukkit.getServer());
-            recentTps = ((double[]) server.getClass().getField("recentTps").get(server));
-        } catch (ReflectiveOperationException ignored) {
-            //not spigot
-        }
         if (Bukkit.getPluginManager().isPluginEnabled("PremiumVanish")) {
             new BukkitPremiumVanishHook().register();
         }
@@ -421,19 +402,12 @@ public class BukkitPlatform implements BackendPlatform {
 
     @Override
     public double getTPS() {
-        if (recentTps != null) {
-            return recentTps[0];
-        } else if (paperTps) {
-            return Bukkit.getTPS()[0];
-        } else {
-            return -1;
-        }
+        return implementationProvider.getTPS();
     }
 
     @Override
     public double getMSPT() {
-        if (paperMspt) return Bukkit.getAverageTickTime();
-        return -1;
+        return implementationProvider.getMSPT();
     }
 
     /**
@@ -445,7 +419,7 @@ public class BukkitPlatform implements BackendPlatform {
      *          Task to run
      */
     public void runSync(@NotNull Entity entity, @NotNull Runnable task) {
-        Bukkit.getScheduler().runTask(plugin, task);
+        implementationProvider.runSync(entity, task);
     }
 
     /**

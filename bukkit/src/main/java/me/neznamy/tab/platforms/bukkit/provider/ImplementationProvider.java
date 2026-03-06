@@ -68,4 +68,28 @@ public interface ImplementationProvider {
      * @return  Player's ping
      */
     int getPing(@NotNull BukkitTabPlayer player);
+
+    /**
+     * Returns server's TPS.
+     *
+     * @return  Server's TPS
+     */
+    double getTPS();
+
+    /**
+     * Returns server's MSPT.
+     *
+     * @return  Server's MSPT
+     */
+    double getMSPT();
+
+    /**
+     * Runs task in the main thread for given entity.
+     *
+     * @param   entity
+     *          Entity's main thread
+     * @param   task
+     *          Task to run
+     */
+    void runSync(@NotNull Entity entity, @NotNull Runnable task);
 }

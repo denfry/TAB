@@ -39,22 +39,9 @@ public class FoliaPlatform extends BukkitPlatform {
     }
 
     @Override
-    public void loadPlayers() {
-        super.loadPlayers();
-
-        // Folia never calls PlayerChangedWorldEvent, this is a workaround
-        TAB.getInstance().getCpu().getProcessingThread().repeatTask(new TimedCaughtTask(TAB.getInstance().getCpu(), ()  -> {
-            for (TabPlayer player : TAB.getInstance().getOnlinePlayers()) {
-                World actualWorld = World.byName(((Player) player.getPlayer()).getWorld().getName());
-                if (player.world != actualWorld) {
-                    TAB.getInstance().getFeatureManager().onWorldChange(player.getUniqueId(), actualWorld);
-                    PerWorldPlayerList pwp = TAB.getInstance().getFeatureManager().getFeature(TabConstants.Feature.PER_WORLD_PLAYER_LIST);
-                    if (pwp != null) {
-                        runSync((Entity) player.getPlayer(), () -> pwp.onWorldChange(new PlayerChangedWorldEvent((Player) player.getPlayer(), ((Player) player.getPlayer()).getWorld())));
-                    }
-                }
-            }
-        }, "Folia compatibility", "Refreshing world"), 100);
+    public void registerListener() {
+        super.registerListener();
+        Bukkit.getPluginManager().registerEvents(new me.neznamy.tab.platforms.bukkit.FoliaEventListener(), getPlugin());
     }
 
     @Override
@@ -125,9 +112,7 @@ public class FoliaPlatform extends BukkitPlatform {
     }
 
     /**
-     * Runs task using player's entity scheduler. It's using reflection, because
-     * Folia uses Java 17 while TAB maintains Java 8 compatibility for compatibility
-     * with MC versions older than their player base.
+     * Runs task using player's entity scheduler.
      *
      * @param   entity
      *          entity to run task for
@@ -135,12 +120,7 @@ public class FoliaPlatform extends BukkitPlatform {
      *          Task to run
      */
     @Override
-    @SneakyThrows
-    @SuppressWarnings("JavaReflectionMemberAccess")
     public void runSync(@NotNull Entity entity, @NotNull Runnable task) {
-        Object entityScheduler = Entity.class.getMethod("getScheduler").invoke(entity);
-        Consumer<?> consumer = $ -> task.run(); // Reflection and lambdas don't go together
-        entityScheduler.getClass().getMethod("run", Plugin.class, Consumer.class, Runnable.class)
-                .invoke(entityScheduler, getPlugin(), consumer, null);
+        entity.getScheduler().run(getPlugin(), $ -> task.run(), null);
     }
 }
